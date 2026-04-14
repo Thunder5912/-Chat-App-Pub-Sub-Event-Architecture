@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Pub/Sub Architecture</title>
+    <style>
+        /* --- CSS STYLES --- */
+        :root {
+            --primary: #4F46E5;
+            --broker-bg: #1E293B;
+            --bg-color: #F8FAFC;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1, h2, h3 { margin-top: 0; }
+        .text-center { text-align: center; }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Top Section: Publisher & Broker Log */
+        .top-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .publisher-panel { border-top: 5px solid var(--primary); }
+        
+        .broker-panel {
+            background-color: var(--broker-bg);
+            color: #10B981;
+            font-family: monospace;
+            border-top: 5px solid #F59E0B;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .broker-log {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 180px;
+            padding: 10px;
+            background: #0F172A;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        /* Controls */
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; font-weight: bold; margin-bottom: 5px; }
+        
+        input[type="text"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #4338CA; }
+
+        /* Client Grid */
+        .clients-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .client-panel { border-top: 5px solid #10B981; }
+
+        .subscription-toggles {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            background: #f1f5f9;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .chat-box {
+            height: 200px;
+            border: 1px solid #E2E8F0;
+            background-color: #F8FAFC;
+            padding: 10px;
+            overflow-y: auto;
+            border-radius: 5px;
+        }
+
+        .message {
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            background-color: white;
+            border-left: 4px solid #CBD5E1;
+            font-size: 14px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .tag-general { color: #3B82F6; font-weight: bold; }
+        .tag-tech { color: #8B5CF6; font-weight: bold; }
+        .tag-alerts { color: #EF4444; font-weight: bold; }
+
+    </style>
+</head>
+<body>
+
+    <h1 class="text-center">Interactive Pub/Sub Event System</h1>
+
+    <div class="container">
+        <div class="top-grid">
+            <div class="panel publisher-panel">
+                <h3>📤 Publisher</h3>
+                <div class="input-group">
+                    <label>Sender Identity:</label>
+                    <select id="senderSelect">
+                        <option value="SystemAdmin">System Admin</option>
+                        <option value="SupportBot">Support Bot</option>
+                        <option value="Guest">Guest User</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Target Topic:</label>
+                    <select id="topicSelect">
+                        <option value="General">General</option>
+                        <option value="Tech">Tech Support</option>
+                        <option value="Alerts">Critical Alerts</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Message Payload:</label>
+                    <input type="text" id="messageInput" placeholder="Enter message payload...">
+                    <button id="publishBtn">Publish Event to Broker</button>
+                </div>
+            </div>
+
+            <div class="panel broker-panel">
+                <h3 style="color: white; margin-bottom: 10px;">🧠 Event Broker Routing Log</h3>
+                <div class="broker-log" id="brokerLog">
+                    <div>> Broker initialized. Waiting for events...</div>
+                </div>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 10px;">📥 Subscribed Clients</h2>
+
+        <div class="clients-grid">
+            <div class="panel client-panel">
+                <h3>Alice</h3>
+                <div class="subscription-toggles">
+                    <label><input type="checkbox" class="sub-toggle" data-client="Alice" data-topic="General" checked> General</label>
+                    <label><input type="checkbox" class="sub-toggle" data-client="Alice" data-topic="Tech"> Tech</label>
+                    <label><input type="checkbox" class="sub-toggle" data-client="Alice" data-topic="Alerts" checked> Alerts</label>
+                </div>
+                <div class="chat-box" id="chat-Alice"></div>
+            </div>
+
+            <div class="panel client-panel">
+                <h3>Bob</h3>
+                <div class="subscription-toggles">
+                    <label><input type="checkbox" class="sub-toggle" data-client="Bob" data-topic="General"> General</label>
+                    <label><input type="checkbox" class="sub-toggle" data-client="Bob" data-topic="Tech" checked> Tech</label>
+                    <label><input type="checkbox" class="sub-toggle" data-client="Bob" data-topic="Alerts"> Alerts</label>
+                </div>
+                <div class="chat-box" id="chat-Bob"></div>
+            </div>
+
+            <div class="panel client-panel">
+                <h3>Charlie</h3>
+                <div class="subscription-toggles">
+                    <label><input type="checkbox" class="sub-toggle" data-client="Charlie" data-topic="General" checked> General</label>
+                    <label><input type="checkbox" class="sub-toggle" data-client="Charlie" data-topic="Tech" checked> Tech</label>
+                    <label><input type="checkbox" class="sub-toggle" data-client="Charlie" data-topic="Alerts"> Alerts</label>
+                </div>
+                <div class="chat-box" id="chat-Charlie"></div>
+            </div>
+
+            <div class="panel client-panel">
+                <h3>Diana</h3>
+                <div class="subscription-toggles">
+                    <label><input type="checkbox" class="sub-toggle" data-client="Diana" data-topic="General"> General</label>
+                    <label><input type="checkbox" class="sub-toggle" data-client="Diana" data-topic="Tech"> Tech</label>
+                    <label><input type="checkbox" class="sub-toggle" data-client="Diana" data-topic="Alerts" checked> Alerts</label>
+                </div>
+                <div class="chat-box" id="chat-Diana"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* --- JAVASCRIPT LOGIC --- */
+
+        // Helper to log to the Broker Dashboard
+        const brokerLogBox = document.getElementById('brokerLog');
+        function logToBroker(msg) {
+            const div = document.createElement('div');
+            div.innerText = `> ${msg}`;
+            brokerLogBox.appendChild(div);
+            brokerLogBox.scrollTop = brokerLogBox.scrollHeight;
+        }
+
+        // 1. The Advanced Event Broker
+        class AdvancedBroker {
+            constructor() {
+                // Structure: { "TopicName": { "ClientName": callbackFunction } }
+                // Using an object for subscribers makes it easy to remove them dynamically
+                this.topics = {
+                    'General': {},
+                    'Tech': {},
+                    'Alerts': {}
+                };
+            }
+
+            subscribe(topic, clientId, callback) {
+                this.topics[topic][clientId] = callback;
+                logToBroker(`[Sub] ${clientId} subscribed to [${topic}]`);
+            }
+
+            unsubscribe(topic, clientId) {
+                delete this.topics[topic][clientId];
+                logToBroker(`[Unsub] ${clientId} left [${topic}]`);
+            }
+
+            publish(topic, message, sender) {
+                const subscribers = Object.keys(this.topics[topic]);
+                
+                if (subscribers.length === 0) {
+                    logToBroker(`[Warn] Dropped message on [${topic}]. No active subscribers.`);
+                    return;
+                }
+
+                logToBroker(`[Publish] Routing "${message}" on [${topic}] to: ${subscribers.join(', ')}`);
+
+                // Deliver to all active subscribers
+                for (let clientId in this.topics[topic]) {
+                    this.topics[topic][clientId](message, topic, sender);
+                }
+            }
+        }
+
+        const broker = new AdvancedBroker();
+
+        // 2. Client UI Receiver Function
+        function receiveMessage(clientId, message, topic, sender) {
+            const chatBox = document.getElementById(`chat-${clientId}`);
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message';
+            
+            const topicClass = `tag-${topic.toLowerCase()}`;
+            msgDiv.innerHTML = `<span class="${topicClass}">[${topic}]</span> <strong>${sender}:</strong> ${message}`;
+            
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // 3. Wire up the Checkboxes (Dynamic Subscriptions)
+        const toggles = document.querySelectorAll('.sub-toggle');
+        toggles.forEach(toggle => {
+            
+            const clientId = toggle.dataset.client;
+            const topic = toggle.dataset.topic;
+
+            // Initial setup based on HTML 'checked' attribute
+            if (toggle.checked) {
+                broker.subscribe(topic, clientId, (msg, tpc, snd) => receiveMessage(clientId, msg, tpc, snd));
+            }
+
+            // Listen for user checking/unchecking boxes
+            toggle.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    broker.subscribe(topic, clientId, (msg, tpc, snd) => receiveMessage(clientId, msg, tpc, snd));
+                } else {
+                    broker.unsubscribe(topic, clientId);
+                }
+            });
+        });
+
+        // 4. Wire up Publisher Button
+        document.getElementById('publishBtn').addEventListener('click', () => {
+            const sender = document.getElementById('senderSelect').value;
+            const topic = document.getElementById('topicSelect').value;
+            const msgInput = document.getElementById('messageInput');
+            const message = msgInput.value.trim();
+
+            if (message !== '') {
+                broker.publish(topic, message, sender);
+                msgInput.value = ''; // clear input
+            }
+        });
+
+        // Allow 'Enter' to send
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('publishBtn').click();
+        });
+
+    </script>
+</body>
+</html>
